@@ -122,7 +122,8 @@ func (b *Bucket) Do(k string, f func(mc *memcached.Client, vb uint16) error) (er
 
 			if i, ok := err.(*gomemcached.MCResponse); ok {
 				st := i.Status
-				retry = st == gomemcached.NOT_MY_VBUCKET
+				retry = (st == gomemcached.NOT_MY_VBUCKET || st == gomemcached.NOT_SUPPORTED)
+
 			}
 
 			// MB-28842: in case of NMVB, check if the node is still part of the map
@@ -355,7 +356,7 @@ func (b *Bucket) doBulkGet(vb uint16, keys []string, reqDeadline time.Time,
 			switch err.(type) {
 			case *gomemcached.MCResponse:
 				st := err.(*gomemcached.MCResponse).Status
-				if st == gomemcached.NOT_MY_VBUCKET {
+				if st == gomemcached.NOT_MY_VBUCKET || st == gomemcached.NOT_SUPPORTED {
 					b.Refresh()
 					discard = b.checkVBmap(pool.Node())
 					return nil // retry
